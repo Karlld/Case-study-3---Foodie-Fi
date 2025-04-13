@@ -344,6 +344,110 @@ with lead AS (SELECT customer_id,
 |---------------------|
 |     0   |
 
+
+**C. Challenge Payment Question**
+
+The Foodie-Fi team wants you to create a new payments table for the year 2020 that includes amounts paid by each customer in the subscriptions table with the following requirements:
+
+monthly payments always occur on the same day of month as the original start_date of any monthly paid plan
+
+upgrades from basic to monthly or pro plans are reduced by the current paid amount in that month and start immediately
+
+upgrades from pro monthly to pro annual are paid at the end of the current billing period and also starts at the end of the month period
+
+once a customer churns they will no longer make payments
+
+```sql
+
+WITH RECURSIVE dates as (SELECT c.customer_id, 
+                                c.plan_id, 
+	                        p.plan_name, 
+	                        p.price, 
+	                        c.start_date,
+	                        LEAD(c.start_date, 1) OVER(PARTITION BY c.customer_id) AS end_date
+                             FROM subscriptions c
+                          JOIN plans p ON c.plan_id = p.plan_id
+                          WHERE start_date BETWEEN '2020-01-01' AND '2020-12-31'
+                          AND c.plan_id != 0 
+                          AND c.plan_id != 4
+                           ORDER BY c.customer_id),
+					  
+        full_dates AS (SELECT customer_id, 
+                              plan_id, 
+	                      plan_name, 
+	                      price, 
+	                      start_date,
+	                      COALESCE(end_date, '2020-12-31') AS end_date
+                          FROM dates),
+				
+        full_dates2 AS (SELECT customer_id, 
+                               plan_id, 
+	                       plan_name, 
+	                       price, 
+	                       start_date,
+                               end_date 
+                           FROM full_dates
+		
+						UNION ALL		   
+
+            SELECT customer_id, 
+                   plan_id, 
+                   plan_name, 
+                   price, 
+                   DATE(start_date + INTERVAL '1 MONTH') AS start_date,
+                   end_date
+               FROM full_dates2
+               WHERE end_date > DATE(start_date + INTERVAL '1 MONTH') 
+               AND plan_id != 3),
+
+full_dates3 AS (SELECT *, 
+                     LAG(plan_id, 1)OVER(PARTITION BY customer_id ORDER BY start_date) AS previous_plan,
+                     LAG(price, 1)OVER(PARTITION BY customer_id ORDER BY start_date) AS previous_bill,
+                     LAG(start_date, 1)OVER(PARTITION BY customer_ID ORDER BY start_date) AS previous_date
+	          FROM full_dates2
+	          ORDER BY customer_id, start_date)
+			
+SELECT customer_id, 
+       plan_id, 
+       plan_name, 
+       (CASE WHEN previous_plan = 2 and plan_id = 3 THEN DATE(previous_date + INTERVAL '1 MONTH')
+		ELSE start_date
+		END) AS start_date,
+       (CASE WHEN previous_plan = 1 and (plan_id = 2 or plan_id = 3) THEN price - previous_bill
+		ELSE price
+	   END) as price
+    FROM full_dates3
+    ORDER BY customer_id, start_date;
+
+```
+| customer_id |	plan_id | plan_name |	start_date |	price  |
+|-------------|---------|-----------|--------------|-----------|
+| 16 |	1 |	basic monthly |	2020-06-07 |	9.90 |
+| 16 |	1 | 	basic monthly |	2020-07-07 |	9.90 |
+| 16 |	1 |	basic monthly | 2020-08-07 |	9.90 |
+| 16 |	1 |	basic monthly |	2020-09-07 |	9.90 |
+| 16 |	1 |	basic monthly |	2020-10-07 |	9.90 |
+| 16 |	3 |	pro annual |	2020-10-21 |	189.10 |
+| 16 |	1 | 	basic monthly |	2020-11-07 |	9.90 |
+| 16 |	1 |	basic monthly |	2020-12-07 |	9.90 |
+| 17 |	1 | 	basic monthly |	2020-08-03 |	9.90 |
+| 17 |	1 |     basic monthly |	2020-09-03 |	9.90 |
+| 17 |	1 | 	basic monthly |	2020-10-03 |	9.90 |
+| 17 |	1 |	basic monthly |	2020-11-03 |	9.90 |
+| 17 |	1 |	basic monthly |	2020-12-03 |	9.90 |
+| 17 |	3 |	pro annual |	2020-12-11 |	189.10 |
+| 18 |	2 | 	pro monthly |	2020-07-13 |	19.90 |
+| 18 |	2 |	pro monthly |	2020-08-13 |	19.90 | 
+| 18 |	2 |	pro monthly |   2020-09-13 |	19.90 | 
+| 18 |	2 |	pro monthly |	2020-10-13 |	19.90 |
+| 18 |	2 |	pro monthly |	2020-11-13 |	19.90 |
+| 18 |	2 |	pro monthly |	2020-12-13 |	19.90 |
+| 19 |	2 | 	pro monthly |	2020-06-29 |	19.90 |
+| 19 |	2 |	pro monthly |	2020-07-29 |	19.90 |
+| 19 |	3 | 	pro annual |	2020-08-29 |	199.00 |
+
+   
+
  
 
 
