@@ -413,13 +413,16 @@ SELECT customer_id,
        (CASE WHEN previous_plan = 2 and plan_id = 3 THEN DATE(previous_date + INTERVAL '1 MONTH')
 		ELSE start_date
 		END) AS start_date,
-       (CASE WHEN previous_plan = 1 and (plan_id = 2 or plan_id = 3) THEN price - previous_bill
+       (CASE WHEN previous_plan = 1 AND (plan_id = 2 OR plan_id = 3) THEN price - previous_bill
 		ELSE price
-	   END) as price
+	   END) AS price
     FROM full_dates3
     ORDER BY customer_id, start_date;
 
 ```
+
+This is a small sample of the output;
+
 | customer_id |	plan_id | plan_name |	start_date |	price  |
 |-------------|---------|-----------|--------------|-----------|
 | 16 |	1 |	basic monthly |	2020-06-07 |	9.90 |
