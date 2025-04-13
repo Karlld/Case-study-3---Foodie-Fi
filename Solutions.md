@@ -71,7 +71,7 @@ How many customers has Foodie-Fi ever had?
 
 ```sql
 
-SELECT COUNT(DISTINCT(customer_id)) as Total_customers
+SELECT COUNT(DISTINCT(customer_id)) AS Total_customers
  FROM subscriptions
 ```
 			 
@@ -86,7 +86,7 @@ What is the monthly distribution of trial plan start_date values for our dataset
 ```SQL
 
 SELECT trial_start_month,
-       COUNT(Trial_start_month) as total_start_dates
+       COUNT(Trial_start_month) AS total_start_dates
         FROM (SELECT DATE_PART('Month', start_date) AS Trial_start_month
              FROM subscriptions
 		    WHERE plan_id = 0)
@@ -116,7 +116,7 @@ What plan start_date values occur after the year 2020 for our dataset? Show the 
 ```SQL
 
 SELECT p.plan_name,
-       COUNT(s.start_date) as post_2020_signups
+       COUNT(s.start_date) AS post_2020_signups
    FROM subscriptions s
      JOIN plans p on s.plan_id = p.plan_id
        WHERE s.start_date >= '2021-01-01'
@@ -135,7 +135,7 @@ GROUP BY plan_name
 What is the customer count and percentage of customers who have churned rounded to 1 decimal place?
 
 ```SQL
-with total_cust as
+WITH total_cust as
       (SELECT COUNT(DISTINCT(customer_id)) AS total_cust
            FROM subscriptions),
 
@@ -145,7 +145,7 @@ total_churn AS (SELECT COUNT(DISTINCT(customer_id)) AS total_churn
 
      SELECT total_churn,
             (100*total_churn::FLOAT/total_cust::FLOAT) AS percentage
-                from total_churn, total_cust
+                FROM total_churn, total_cust
 ```
 
 | total_churn |	percentage |
@@ -156,7 +156,7 @@ total_churn AS (SELECT COUNT(DISTINCT(customer_id)) AS total_churn
 How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
 
 ```SQL 
-with lead as (SELECT customer_id,
+WITH lead AS (SELECT customer_id,
                      plan_id,
                      start_date, 
              LEAD(plan_id, 1) OVER (ORDER BY customer_id)
@@ -182,8 +182,8 @@ What is the number and percentage of customer plans after their initial free tri
 
 ```SQL
 
-with lead as (SELECT customer_id, plan_id, start_date, 
-			  LEAD(plan_id, 1) over (order by customer_id)
+WITH lead AS (SELECT customer_id, plan_id, start_date, 
+			  LEAD(plan_id, 1) OVER (ORDER BY customer_id)
 			  AS next_plan
         FROM subscriptions
    ORDER BY customer_id)
@@ -210,7 +210,7 @@ FROM lead
 What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
 
 ```SQL
-with plan_rank AS (SELECT customer_id,
+WITH plan_rank AS (SELECT customer_id,
                           start_date,
                           plan_id, 
                           RANK () OVER(PARTITION BY customer_id ORDER BY plan_id desc) AS plan_rank
@@ -240,9 +240,9 @@ GROUP BY plan_id
 How many customers have upgraded to an annual plan in 2020?
 
 ```SQL
-with annual_subs AS (SELECT customer_id, 
+WITH annual_subs AS (SELECT customer_id, 
 		                        plan_id,
-                            date_part('YEAR', start_date) as year_2020
+                            date_part('YEAR', start_date) AS year_2020
                       FROM subscriptions
                       WHERE plan_id = 3)
 
@@ -258,8 +258,8 @@ SELECT COUNT(customer_id) AS annual_subs_for_2020
 
 How many days on average does it take for a customer to upgrade to an annual plan from the day they join Foodie-Fi?
 
-``SQL 
-with annual_plans AS (SELECT customer_id, 
+```SQL 
+WITH annual_plans AS (SELECT customer_id, 
                              start_date, 
                              plan_id 
                     FROM subscriptions 
@@ -282,7 +282,7 @@ SELECT ROUND(AVG(p.start_date-t.start_date)) AS avg_signup_times_days
 Can you further breakdown this average value into 30 day periods (i.e. 0-30 days, 31-60 days etc)
 
 ```SQL
-with annual_plans AS (SELECT customer_id,
+WITH annual_plans AS (SELECT customer_id,
                              start_date,
                              plan_id 
                         FROM subscriptions 
@@ -325,7 +325,7 @@ How many customers downgraded from a pro monthly to a basic monthly plan in 2020
 
 ```SQL
 
-with lead AS (SELECT customer_id,
+WITH lead AS (SELECT customer_id,
                      plan_id,
                      start_date, 
 			  LEAD(plan_id, 1) OVER (ORDER BY customer_id)
@@ -359,7 +359,7 @@ once a customer churns they will no longer make payments
 
 ```sql
 
-WITH RECURSIVE dates as (SELECT c.customer_id, 
+WITH RECURSIVE dates AS (SELECT c.customer_id, 
                                 c.plan_id, 
 	                        p.plan_name, 
 	                        p.price, 
@@ -410,7 +410,7 @@ full_dates3 AS (SELECT *,
 SELECT customer_id, 
        plan_id, 
        plan_name, 
-       (CASE WHEN previous_plan = 2 and plan_id = 3 THEN DATE(previous_date + INTERVAL '1 MONTH')
+       (CASE WHEN previous_plan = 2 AND plan_id = 3 THEN DATE(previous_date + INTERVAL '1 MONTH')
 		ELSE start_date
 		END) AS start_date,
        (CASE WHEN previous_plan = 1 AND (plan_id = 2 OR plan_id = 3) THEN price - previous_bill
